@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Login</title>
+</head>
+<body>
+    <h1>Debug Login Test</h1>
+    <button onclick="testLogin()">Test Login</button>
+    <div id="result"></div>
+
+    <script>
+        async function testLogin() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing login...';
+            
+            try {
+                console.log('Starting login test...');
+                
+                const response = await fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'wangchuk@example.com',
+                        password: '123'
+                    })
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Login successful:', data);
+                    resultDiv.innerHTML = '<p style="color: green;">Login successful! Token: ' + data.token.substring(0, 50) + '...</p>';
+                } else {
+                    const error = await response.text();
+                    console.error('Login failed:', error);
+                    resultDiv.innerHTML = '<p style="color: red;">Login failed: ' + error + '</p>';
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                resultDiv.innerHTML = '<p style="color: red;">Network error: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # Test application service
+  app-test:
+    build: 
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: jwt-todo-app-test
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=test
+      - PORT=3000
+      - JWT_SECRET=test-jwt-secret-key
+      - DATABASE_URL=postgresql://test:test@postgres-test:5432/testdb
+      - REDIS_URL=redis://redis-test:6379
+    networks:
+      - test-network
+    depends_on:
+      - postgres-test
+      - redis-test
+    command: ["npm", "test"]
+
+  # Test database
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: jwt-todo-postgres-test
+    environment:
+      - POSTGRES_DB=testdb
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
+    volumes:
+      - ./tests/init-test.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - test-network
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  # Test Redis
+  redis-test:
+    image: redis:7-alpine
+    container_name: jwt-todo-redis-test
+    networks:
+      - test-network
+    tmpfs:
+      - /data
+
+  # Test runner with coverage
+  test-runner:
+    build: 
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: jwt-todo-test-runner
+    environment:
+      - NODE_ENV=test
+      - JWT_SECRET=test-jwt-secret-key
+      - DATABASE_URL=postgresql://test:test@postgres-test:5432/testdb
+    networks:
+      - test-network
+    depends_on:
+      - postgres-test
+      - redis-test
+    volumes:
+      - ./coverage:/app/coverage
+    command: ["npm", "run", "test:coverage"]
+
+  # Performance testing
+  k6:
+    image: grafana/k6:latest
+    container_name: jwt-todo-k6
+    networks:
+      - test-network
+    depends_on:
+      - app-test
+    volumes:
+      - ./tests/performance:/scripts
+    command: ["run", "/scripts/load-test.js"]
+
+  # Security scanning
+  trivy:
+    image: aquasec/trivy:latest
+    container_name: jwt-todo-trivy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ["image", "jwt-todo-app:latest"]
+
+networks:
+  test-network:
+    driver: bridge
+
+
