@@ -31,7 +31,7 @@ services:
       - POSTGRES_USER=test
       - POSTGRES_PASSWORD=test
     volumes:
-      - ./tests/init-test.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./tests/init-test.sql:/docker-entrypoint-initdb.d:ro
     networks:
       - test-network
     tmpfs:
@@ -88,5 +88,3 @@ services:
 networks:
   test-network:
     driver: bridge
-
-
